@@ -12,28 +12,54 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Java 17
+      - name: Set up Java
         uses: actions/setup-java@v4
         with:
+          distribution: temurin
           java-version: '17'
-          distribution: 'temurin'
-          cache: gradle
+
+      - name: Find Gradle wrapper
+        shell: bash
+        run: |
+          echo "Searching for gradlew..."
+          GRADLEW=$(find . -type f -name "gradlew" -print -quit)
+
+          if [ -z "$GRADLEW" ]; then
+            echo "ERROR: gradlew file was not found."
+            echo "Repository files:"
+            find . -maxdepth 3 -type f | sort
+            exit 1
+          fi
+
+          echo "Found Gradle wrapper: $GRADLEW"
+          echo "GRADLEW=$GRADLEW" >> "$GITHUB_ENV"
+          echo "PROJECT_DIR=$(dirname "$GRADLEW")" >> "$GITHUB_ENV"
 
       - name: Make Gradle executable
-        working-directory: dakd-jarvis
-        run: chmod +x gradlew
+        shell: bash
+        run: |
+          chmod +x "$GRADLEW"
 
       - name: Build Debug APK
-        working-directory: dakd-jarvis
-        run: ./gradlew assembleDebug
+        shell: bash
+        run: |
+          cd "$PROJECT_DIR"
+          ./gradlew assembleDebug --stacktrace
+
+      - name: Find APK
+        shell: bash
+        run: |
+          echo "Searching for APK..."
+          find . -type f -name "*.apk" -print
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: dakd-jarvis-apk
-          path: dakd-jarvis/app/build/outputs/apk/debug/app-debug.apk
+          name: dakd-jarvis-debug-apk
+          path: |
+            **/build/outputs/apk/debug/*.apk
           if-no-files-found: error
 ```
