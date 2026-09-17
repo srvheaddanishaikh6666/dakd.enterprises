@@ -11,8 +11,8 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
       - name: Build APK
+        working-directory: dakd-jarvis
         run: |
-          cd dakd-jarvis
           chmod +x gradlew
          ./gradlew assembleDebug
       - name: Upload APK
